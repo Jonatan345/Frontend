@@ -1,36 +1,18 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-bima-orange: #f39200;       /* Oranye terang prototipe */
+  --color-bima-orange-light: #fff5eb; /* Background menu aktif */
+  --color-bima-bg: #f8f9fa;           /* Background konten utama */
+}
+
 :root {
-  --background: #ffffff;
+  --background: #f8f9fa;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* --- Konfigurasi Support Figma Bima Resto --- */
-  --color-bima-orange: #f39200;       /* Warna Oranye Utama Brand */
-  --color-bima-orange-light: #fff5eb; /* Warna Background Menu Aktif */
-  --color-bima-border: #f0f0f0;       /* Warna Border Sidebar */
-  --color-bima-text-gray: #888;       /* Warna Teks Tidak Aktif */
-  --color-bima-red: #ff4d4d;          /* Warna Tombol Delete */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Pastikan tidak ada dark mode yang mengganggu warna putih/abu-abu kita */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  /* Menggunakan font Geist Sans agar tampilan dashboard lebih modern */
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bima-bg);
+  color: #111827;
 }
