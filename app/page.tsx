@@ -13,6 +13,7 @@ export default function MenuManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingMenu, setEditingMenu] = useState<any>(null); // Untuk mode Edit
 
+  // Perbaikan state menuData: Hapus deklarasi const yang salah
   const [menuData, setMenuData] = useState([
     { name: "Seasoning Pokpok Chicken", price: "33.884", img: "https://placehold.co/400x300?text=Pokpok" },
     { name: "Roti Pisang Bakar", price: "42.975", img: "https://placehold.co/400x300?text=Roti" },
@@ -35,6 +36,11 @@ export default function MenuManagement() {
     setIsModalOpen(true);
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingMenu(null);
+  };
+
   const handleAddOrUpdate = (menu: any) => {
     if (editingMenu) {
       // Logika Update: Ganti data lama dengan data baru
@@ -44,11 +50,6 @@ export default function MenuManagement() {
       setMenuData((prev) => [menu, ...prev]);
     }
     closeModal();
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingMenu(null);
   };
 
   const triggerDelete = (name: string) => {
@@ -76,7 +77,7 @@ export default function MenuManagement() {
           onClick={handleOpenAdd}
           className="bg-bima-orange text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md hover:bg-[#e68a00] transition-all"
         >
-          New Menu <span className="flex items-center justify-center w-5 h-5 border-2 border-white rounded-full text-xs font-black">+</span>
+          New Menu <span className="flex items-center justify-center w-5 h-5 border-2 border-white rounded-full text-xs font-black"><Plus size={14} /></span>
         </button>
 
         <div className="flex gap-4">
