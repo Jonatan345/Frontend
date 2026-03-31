@@ -22,11 +22,11 @@ export default function Sidebar() {
       <div className="p-8 flex flex-col items-center border-b border-gray-50 mb-6">
         {/* Menggunakan tag <img> biasa untuk menghindari error Next.js Image optimizer */}
         <img 
-          src="/logo-pradita.png" 
+          src="/logopradita.png" 
           alt="Pradita University Logo" 
-          className="w-full h-16 object-contain mb-2"
+          className="w-full h-22 object-contain mb-2"
         />
-        <h2 className="text-[11px] font-black text-[#F58A27] tracking-[0.2em] uppercase mt-1">
+        <h2 className="text-[18px] font-black text-[#F58A27] tracking-[0.2em] uppercase mt-1">
           BIMA RESTO
         </h2>
       </div>
