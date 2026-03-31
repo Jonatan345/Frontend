@@ -9,9 +9,9 @@ export default function Sidebar() {
 
   // Menggunakan ikon yang sesuai dengan desain Figma
   const menuItems = [
-    { name: "Menu", href: "/", icon: <BookOpen size={20} /> },
+    { name: "Stock Management", href: "/", icon: <BookOpen size={20} /> },
     { name: "Categories", href: "/categories", icon: <Folder size={20} /> },
-    { name: "Promos", href: "/promotions", icon: <Tag size={20} /> },
+    { name: "Promotion", href: "/promotions", icon: <Tag size={20} /> },
     { name: "Packages", href: "/packages", icon: <Package size={20} /> },
   ];
 
@@ -22,7 +22,7 @@ export default function Sidebar() {
       <div className="p-8 flex flex-col items-center border-b border-gray-50 mb-6">
         {/* Menggunakan tag <img> biasa untuk menghindari error Next.js Image optimizer */}
         <img 
-          src="/logo-pradita.jpg" 
+          src="/logo-pradita.png" 
           alt="Pradita University Logo" 
           className="w-full h-16 object-contain mb-2"
         />

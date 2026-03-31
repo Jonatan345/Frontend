@@ -1,55 +1,49 @@
 "use client";
 import { useState } from "react";
-import { Plus, Search, ChevronDown } from "lucide-react";
-import MenuCard from "@/components/MenuCard";
-import PortionCalculator from "@/components/PortionCalculator";
+import { Plus, Search, ChevronDown, Package2, Edit3, Trash2, AlertCircle } from "lucide-react";
+import StockModal from "@/components/StockModal";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
-export default function MenuManagement() {
+export default function StockManagement() {
   // --- States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingMenu, setEditingMenu] = useState<any>(null); // Untuk mode Edit
+  const [editingStock, setEditingStock] = useState<any>(null);
 
-  // Perbaikan state menuData: Hapus deklarasi const yang salah
-  const [menuData, setMenuData] = useState([
-    { name: "Seasoning Pokpok Chicken", price: "33.884", img: "https://placehold.co/400x300?text=Pokpok" },
-    { name: "Roti Pisang Bakar", price: "42.975", img: "https://placehold.co/400x300?text=Roti" },
-    { name: "Singkong Goreng", price: "45.455", img: "https://placehold.co/400x300?text=Singkong" },
-    { name: "Sup Buntut", price: "125.620", img: "https://placehold.co/400x300?text=Sup" },
-    { name: "Fried Sausage", price: "37.190", img: "https://placehold.co/400x300?text=Sausage" },
-    { name: "Tahu Cabe Garam", price: "27.273", img: "https://placehold.co/400x300?text=Tahu" },
-    { name: "Pisang Goreng Keju", price: "38.843", img: "https://placehold.co/400x300?text=Pisang" },
-    { name: "Tempe Goreng Tepung", price: "20.661", img: "https://placehold.co/400x300?text=Tempe" },
+  // Data Awal: Sudah dihapus property img-nya
+  const [stockData, setStockData] = useState([
+    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", portions: 75 },
+    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", portions: 40 },
+    { name: "Telur Ayam", quantity: 50, unit: "Kg", portions: 0 },
+    { name: "Minyak Goreng", quantity: 5, unit: "Liter", portions: 0 },
+    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", portions: 500 },
   ]);
 
   // --- Functions ---
   const handleOpenAdd = () => {
-    setEditingMenu(null); // Pastikan mode tambah, bukan edit
+    setEditingStock(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (menu: any) => {
-    setEditingMenu(menu);
+  const handleOpenEdit = (item: any) => {
+    setEditingStock(item);
     setIsModalOpen(true);
+  };
+
+  const handleAddOrUpdate = (item: any) => {
+    if (editingStock) {
+      setStockData((prev) => prev.map((s) => s.name === editingStock.name ? item : s));
+    } else {
+      setStockData((prev) => [item, ...prev]);
+    }
+    closeModal();
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditingMenu(null);
-  };
-
-  const handleAddOrUpdate = (menu: any) => {
-    if (editingMenu) {
-      // Logika Update: Ganti data lama dengan data baru
-      setMenuData((prev) => prev.map((item) => item.name === editingMenu.name ? menu : item));
-    } else {
-      // Logika Tambah: Masukkan ke urutan paling atas
-      setMenuData((prev) => [menu, ...prev]);
-    }
-    closeModal();
+    setEditingStock(null);
   };
 
   const triggerDelete = (name: string) => {
@@ -59,72 +53,135 @@ export default function MenuManagement() {
 
   const handleConfirmDelete = () => {
     if (itemToDelete) {
-      setMenuData((prev) => prev.filter((menu) => menu.name !== itemToDelete));
+      setStockData((prev) => prev.filter((item) => item.name !== itemToDelete));
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
     }
   };
 
-  const filteredMenu = menuData.filter((item) =>
+  const filteredStock = stockData.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* --- Toolbar Section --- */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* --- Header Section --- */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-800 flex items-center gap-3">
+            <Package2 className="text-bima-orange" size={32} />
+            Stock Management
+          </h1>
+          <p className="text-gray-500 text-sm mt-1 italic">Pradita University - Bima Resto Inventory System</p>
+        </div>
+        
         <button 
           onClick={handleOpenAdd}
-          className="bg-bima-orange text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md hover:bg-[#e68a00] transition-all"
+          className="bg-bima-orange text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-100 hover:bg-[#e68a00] active:scale-95 transition-all"
         >
-          New Menu <span className="flex items-center justify-center w-5 h-5 border-2 border-white rounded-full text-xs font-black"><Plus size={14} /></span>
+          Add New Stock <Plus size={18} strokeWidth={3} />
         </button>
+      </div>
 
-        <div className="flex gap-4">
-          <div className="relative">
-            <select className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-10 text-gray-500 outline-none w-40 font-medium cursor-pointer">
-              <option>Category</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-3 text-gray-400" size={16} />
-          </div>
-          
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search menu..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border border-gray-200 rounded-lg px-4 py-2 pr-10 outline-none w-64 focus:ring-1 focus:ring-bima-orange transition-all" 
-            />
-            <Search className="absolute right-3 top-3 text-gray-400" size={18} />
-          </div>
+      {/* --- Toolbar / Filter Section --- */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
+        <div className="relative flex-1 w-full">
+          <input 
+            type="text" 
+            placeholder="Search by ingredient name..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 pr-10 outline-none focus:ring-2 focus:ring-bima-orange/20 text-sm" 
+          />
+          <Search className="absolute right-3 top-3 text-gray-400" size={18} />
+        </div>
+        
+        <div className="flex gap-2 w-full md:w-auto">
+          <select className="flex-1 md:w-40 appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-gray-600 outline-none font-medium text-sm cursor-pointer">
+            <option>All Units</option>
+            <option>Kg</option>
+            <option>Liter</option>
+            <option>Pcs</option>
+          </select>
+          <button className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+            Export
+          </button>
         </div>
       </div>
 
-      {/* --- Menu Grid Section --- */}
-      {filteredMenu.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-10">
-          {filteredMenu.map((item, index) => (
-            <MenuCard 
-              key={index} 
-              {...item}
-              onDelete={() => triggerDelete(item.name)}
-              onEdit={() => handleOpenEdit(item)} 
-            />
-          ))}
+      {/* --- Table Section --- */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Item Name</th>
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Stock Level</th>
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Unit</th>
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Est. Portions</th>
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredStock.length > 0 ? (
+                filteredStock.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="p-5">
+                      {/* Hanya menampilkan Nama, tanpa box gambar */}
+                      <span className="font-bold text-gray-700">{item.name}</span>
+                    </td>
+                    <td className="p-5">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-black ${item.quantity < 10 ? 'text-red-500' : 'text-gray-700'}`}>
+                          {item.quantity}
+                        </span>
+                        {item.quantity < 10 && (
+                          <AlertCircle size={14} className="text-red-500 animate-pulse" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-5 text-gray-500 text-sm font-medium">{item.unit}</td>
+                    <td className="p-5 text-center">
+                      <span className="bg-orange-50 text-bima-orange px-3 py-1 rounded-full text-[11px] font-black border border-orange-100">
+                        {item.portions || 0} Porsi
+                      </span>
+                    </td>
+                    <td className="p-5 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button 
+                          onClick={() => handleOpenEdit(item)}
+                          className="p-2 text-gray-400 hover:text-bima-orange hover:bg-orange-50 rounded-lg transition-all"
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => triggerDelete(item.name)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-20 text-center text-gray-400 italic">
+                    No stock data found for "{searchQuery}"
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-          <p className="text-gray-400 font-medium">Menu "{searchQuery}" tidak ditemukan.</p>
-        </div>
-      )}
+      </div>
 
       {/* --- Modals Section --- */}
-      <PortionCalculator 
+      <StockModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
         onAdd={handleAddOrUpdate}
-        editData={editingMenu}
+        editData={editingStock}
       />
 
       <DeleteConfirmModal 

@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Header Bima Resto - Universitas Pradita */}
           <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-10 shadow-sm/5">
             <div className="flex flex-col">
-              <h1 className="text-xl font-black text-gray-800 tracking-tight">Menu Management</h1>
+              <h1 className="text-xl font-black text-gray-800 tracking-tight">Inventory Management</h1>
               {/* Menambahkan identitas Bima Resto dan Kampus */}
               <div className="flex items-center gap-2">
                 <span className="text-[10px] bg-bima-orange/10 text-bima-orange px-2 py-0.5 rounded-full font-bold uppercase">
