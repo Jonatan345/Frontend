@@ -24,9 +24,9 @@ export default function Sidebar() {
         <img 
           src="/logopradita.png" 
           alt="Pradita University Logo" 
-          className="w-full h-22 object-contain mb-2"
+          className="w-full h-19 object-contain mb-2"
         />
-        <h2 className="text-[18px] font-black text-[#F58A27] tracking-[0.2em] uppercase mt-1">
+        <h2 className="text-[16px] font-black text-[#F58A27] tracking-[0.2em] uppercase mt-1">
           BIMA RESTO
         </h2>
       </div>

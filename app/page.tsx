@@ -12,13 +12,13 @@ export default function StockManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingStock, setEditingStock] = useState<any>(null);
 
-  // Data Awal: Sudah dihapus property img-nya
+  // Data Awal dengan Kategori
   const [stockData, setStockData] = useState([
-    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", portions: 75 },
-    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", portions: 40 },
-    { name: "Telur Ayam", quantity: 50, unit: "Kg", portions: 0 },
-    { name: "Minyak Goreng", quantity: 5, unit: "Liter", portions: 0 },
-    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", portions: 500 },
+    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", category: "Fresh Ingredients (Meat)" },
+    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)" },
+    { name: "Telur Ayam", quantity: 50, unit: "Kg", category: "Fresh Ingredients (Poultry)" },
+    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle" },
+    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", category: "Dry Ingredients" },
   ]);
 
   // --- Functions ---
@@ -57,6 +57,31 @@ export default function StockManagement() {
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
     }
+  };
+
+  // --- Fungsi Export CSV ---
+  const handleExport = () => {
+    // Menentukan header tabel
+    const headers = ["Item Name", "Stock Level", "Unit", "Category"];
+    
+    // Mengonversi data stok menjadi baris CSV
+    const csvRows = stockData.map(item => 
+      `"${item.name}",${item.quantity},"${item.unit}","${item.category}"`
+    );
+
+    // Menggabungkan header dan isi
+    const csvContent = [headers.join(","), ...csvRows].join("\n");
+
+    // Membuat file download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `BimaResto_Stock_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filteredStock = stockData.filter((item) =>
@@ -103,7 +128,10 @@ export default function StockManagement() {
             <option>Liter</option>
             <option>Pcs</option>
           </select>
-          <button className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">
+          <button 
+            onClick={handleExport}
+            className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors active:scale-95"
+          >
             Export
           </button>
         </div>
@@ -118,7 +146,7 @@ export default function StockManagement() {
                 <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Item Name</th>
                 <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Stock Level</th>
                 <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider">Unit</th>
-                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Est. Portions</th>
+                <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Category</th>
                 <th className="p-5 text-xs font-black text-gray-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -127,7 +155,6 @@ export default function StockManagement() {
                 filteredStock.map((item, index) => (
                   <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="p-5">
-                      {/* Hanya menampilkan Nama, tanpa box gambar */}
                       <span className="font-bold text-gray-700">{item.name}</span>
                     </td>
                     <td className="p-5">
@@ -142,8 +169,8 @@ export default function StockManagement() {
                     </td>
                     <td className="p-5 text-gray-500 text-sm font-medium">{item.unit}</td>
                     <td className="p-5 text-center">
-                      <span className="bg-orange-50 text-bima-orange px-3 py-1 rounded-full text-[11px] font-black border border-orange-100">
-                        {item.portions || 0} Porsi
+                      <span className="bg-bima-orange-light text-bima-orange px-3 py-1 rounded-full text-[10px] font-black border border-orange-100 uppercase tracking-tighter">
+                        {item.category}
                       </span>
                     </td>
                     <td className="p-5 text-right">
