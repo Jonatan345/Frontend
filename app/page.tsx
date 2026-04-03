@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Plus, Search, ChevronDown, Package2, Edit3, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Search, ChevronDown, Package2, Edit3, Trash2, AlertCircle, BellRing } from "lucide-react";
 import StockModal from "@/components/StockModal";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
@@ -12,13 +12,13 @@ export default function StockManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingStock, setEditingStock] = useState<any>(null);
 
-  // Data Awal dengan Kategori
+  // Data Awal: Menambahkan properti minStock untuk setiap item
   const [stockData, setStockData] = useState([
-    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", category: "Fresh Ingredients (Meat)" },
-    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)" },
-    { name: "Telur Ayam", quantity: 50, unit: "Kg", category: "Fresh Ingredients (Poultry)" },
-    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle" },
-    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", category: "Dry Ingredients" },
+    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", category: "Fresh Ingredients (Meat)", minStock: 10 },
+    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 10 }, // Menipis
+    { name: "Telur Ayam", quantity: 50, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 20 },
+    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle", minStock: 10 }, // Menipis
+    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", category: "Dry Ingredients", minStock: 20 },
   ]);
 
   // --- Functions ---
@@ -59,34 +59,27 @@ export default function StockManagement() {
     }
   };
 
-  // --- Fungsi Export CSV ---
   const handleExport = () => {
-    // Menentukan header tabel
-    const headers = ["Item Name", "Stock Level", "Unit", "Category"];
-    
-    // Mengonversi data stok menjadi baris CSV
+    const headers = ["Item Name", "Stock Level", "Unit", "Category", "Min Stock"];
     const csvRows = stockData.map(item => 
-      `"${item.name}",${item.quantity},"${item.unit}","${item.category}"`
+      `"${item.name}",${item.quantity},"${item.unit}","${item.category}",${item.minStock}`
     );
-
-    // Menggabungkan header dan isi
     const csvContent = [headers.join(","), ...csvRows].join("\n");
-
-    // Membuat file download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", `BimaResto_Stock_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
   };
 
   const filteredStock = stockData.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Logika untuk menghitung berapa banyak item yang stoknya menipis
+  const lowStockItems = stockData.filter(item => item.quantity <= (item.minStock || 0));
+  const hasLowStock = lowStockItems.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -107,6 +100,30 @@ export default function StockManagement() {
           Add New Stock <Plus size={18} strokeWidth={3} />
         </button>
       </div>
+
+      {/* --- Alert Banner: Muncul jika ada stok di bawah batas minimum --- */}
+      {hasLowStock && (
+        <div className="mb-8 bg-red-50 border border-red-100 p-5 rounded-[2rem] flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4">
+            <div className="bg-red-500 p-2.5 rounded-2xl shadow-lg shadow-red-100">
+              <BellRing className="text-white animate-bounce" size={20} />
+            </div>
+            <div>
+              <h4 className="text-red-800 font-black text-sm uppercase tracking-tight">Perhatian: Stok Menipis!</h4>
+              <p className="text-red-600/80 text-xs font-bold">
+                Ada {lowStockItems.length} item yang sudah mencapai batas minimum pemesanan.
+              </p>
+            </div>
+          </div>
+          <div className="hidden sm:flex gap-2">
+            {lowStockItems.slice(0, 2).map((item, i) => (
+              <span key={i} className="bg-white/50 border border-red-100 px-3 py-1 rounded-xl text-[10px] font-black text-red-500 uppercase">
+                {item.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* --- Toolbar / Filter Section --- */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
@@ -130,7 +147,7 @@ export default function StockManagement() {
           </select>
           <button 
             onClick={handleExport}
-            className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors active:scale-95"
+            className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
           >
             Export
           </button>
@@ -152,45 +169,56 @@ export default function StockManagement() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredStock.length > 0 ? (
-                filteredStock.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="p-5">
-                      <span className="font-bold text-gray-700">{item.name}</span>
-                    </td>
-                    <td className="p-5">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-black ${item.quantity < 10 ? 'text-red-500' : 'text-gray-700'}`}>
-                          {item.quantity}
+                filteredStock.map((item, index) => {
+                  // Mengecek apakah stok saat ini kurang dari atau sama dengan batas minimum
+                  const isLowStock = item.quantity <= (item.minStock || 0);
+                  
+                  return (
+                    <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                      <td className="p-5">
+                        <span className="font-bold text-gray-700">{item.name}</span>
+                      </td>
+                      <td className="p-5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-black ${isLowStock ? 'text-red-500' : 'text-gray-700'}`}>
+                            {item.quantity}
+                          </span>
+                          {isLowStock && (
+                            <div className="group relative flex items-center">
+                              <AlertCircle size={14} className="text-red-500 animate-pulse" />
+                              {/* Tooltip Batas Minimum */}
+                              <span className="absolute left-6 hidden group-hover:block bg-gray-800 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap z-10 font-bold uppercase tracking-widest">
+                                Min: {item.minStock} {item.unit}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-5 text-gray-500 text-sm font-medium">{item.unit}</td>
+                      <td className="p-5 text-center">
+                        <span className="bg-bima-orange-light text-bima-orange px-3 py-1 rounded-full text-[10px] font-black border border-orange-100 uppercase tracking-tighter">
+                          {item.category}
                         </span>
-                        {item.quantity < 10 && (
-                          <AlertCircle size={14} className="text-red-500 animate-pulse" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-5 text-gray-500 text-sm font-medium">{item.unit}</td>
-                    <td className="p-5 text-center">
-                      <span className="bg-bima-orange-light text-bima-orange px-3 py-1 rounded-full text-[10px] font-black border border-orange-100 uppercase tracking-tighter">
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="p-5 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button 
-                          onClick={() => handleOpenEdit(item)}
-                          className="p-2 text-gray-400 hover:text-bima-orange hover:bg-orange-50 rounded-lg transition-all"
-                        >
-                          <Edit3 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => triggerDelete(item.name)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="p-5 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button 
+                            onClick={() => handleOpenEdit(item)}
+                            className="p-2 text-gray-400 hover:text-bima-orange hover:bg-orange-50 rounded-lg transition-all"
+                          >
+                            <Edit3 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => triggerDelete(item.name)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="p-20 text-center text-gray-400 italic">
