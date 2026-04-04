@@ -1,10 +1,17 @@
 import Sidebar from "@/components/Sidebar";
+// Menggunakan alias @ untuk memastikan jalur file ditemukan oleh Next.js
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen bg-[#f8f9fa] text-gray-900 antialiased">
+      {/* Menambahkan suppressHydrationWarning untuk mengatasi error yang disebabkan 
+          oleh ekstensi browser seperti Grammarly pada tag body 
+      */}
+      <body 
+        className="flex min-h-screen bg-[#f8f9fa] text-gray-900 antialiased"
+        suppressHydrationWarning={true}
+      >
         <Sidebar />
         
         <div className="flex-1 flex flex-col">
