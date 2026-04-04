@@ -10,14 +10,15 @@ export default function StockManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories"); // State baru untuk filter kategori
   const [editingStock, setEditingStock] = useState<any>(null);
 
-  // Data Awal: Menambahkan properti minStock untuk setiap item
+  // Data Awal dengan Kategori
   const [stockData, setStockData] = useState([
     { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", category: "Fresh Ingredients (Meat)", minStock: 10 },
-    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 10 }, // Menipis
+    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 10 },
     { name: "Telur Ayam", quantity: 50, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 20 },
-    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle", minStock: 10 }, // Menipis
+    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle", minStock: 10 },
     { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", category: "Dry Ingredients", minStock: 20 },
   ]);
 
@@ -61,7 +62,8 @@ export default function StockManagement() {
 
   const handleExport = () => {
     const headers = ["Item Name", "Stock Level", "Unit", "Category", "Min Stock"];
-    const csvRows = stockData.map(item => 
+    // Menggunakan filteredStock agar data yang di-export sesuai dengan filter di layar
+    const csvRows = filteredStock.map(item => 
       `"${item.name}",${item.quantity},"${item.unit}","${item.category}",${item.minStock}`
     );
     const csvContent = [headers.join(","), ...csvRows].join("\n");
@@ -69,13 +71,16 @@ export default function StockManagement() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `BimaResto_Stock_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `BimaResto_Stock_${selectedCategory}_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
   };
 
-  const filteredStock = stockData.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Logika Filter Ganda: Search Query DAN Kategori
+  const filteredStock = stockData.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All Categories" || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   // Logika untuk menghitung berapa banyak item yang stoknya menipis
   const lowStockItems = stockData.filter(item => item.quantity <= (item.minStock || 0));
@@ -101,7 +106,7 @@ export default function StockManagement() {
         </button>
       </div>
 
-      {/* --- Alert Banner: Muncul jika ada stok di bawah batas minimum --- */}
+      {/* --- Alert Banner --- */}
       {hasLowStock && (
         <div className="mb-8 bg-red-50 border border-red-100 p-5 rounded-[2rem] flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
@@ -127,6 +132,7 @@ export default function StockManagement() {
 
       {/* --- Toolbar / Filter Section --- */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
+        {/* Search Input */}
         <div className="relative flex-1 w-full">
           <input 
             type="text" 
@@ -138,16 +144,40 @@ export default function StockManagement() {
           <Search className="absolute right-3 top-3 text-gray-400" size={18} />
         </div>
         
-        <div className="flex gap-2 w-full md:w-auto">
-          <select className="flex-1 md:w-40 appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-gray-600 outline-none font-medium text-sm cursor-pointer">
-            <option>All Units</option>
-            <option>Kg</option>
-            <option>Liter</option>
-            <option>Pcs</option>
-          </select>
+        {/* Dropdown Group */}
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          {/* Dropdown Filter Kategori */}
+          <div className="relative flex-1 md:w-56">
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-gray-600 outline-none font-medium text-sm cursor-pointer hover:bg-gray-100 transition-colors"
+            >
+              <option value="All Categories">All Categories</option>
+              <option value="Dry Ingredients">Dry Ingredients</option>
+              <option value="Fresh Ingredients (Vegetable)">Fresh Ingredients (Vegetable)</option>
+              <option value="Fresh Ingredients (Fruits)">Fresh Ingredients (Fruits)</option>
+              <option value="Fresh Ingredients (Poultry)">Fresh Ingredients (Poultry)</option>
+              <option value="Fresh Ingredients (Meat)">Fresh Ingredients (Meat)</option>
+              <option value="Fresh Ingredients (Seafood)">Fresh Ingredients (Seafood)</option>
+              <option value="Bottle">Bottle</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={16} />
+          </div>
+
+          <div className="relative flex-1 md:w-32">
+            <select className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-gray-600 outline-none font-medium text-sm cursor-pointer">
+              <option>All Units</option>
+              <option>Kg</option>
+              <option>Liter</option>
+              <option>Pcs</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={16} />
+          </div>
+
           <button 
             onClick={handleExport}
-            className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
+            className="bg-gray-100 text-gray-600 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all active:scale-95"
           >
             Export
           </button>
@@ -170,7 +200,6 @@ export default function StockManagement() {
             <tbody className="divide-y divide-gray-50">
               {filteredStock.length > 0 ? (
                 filteredStock.map((item, index) => {
-                  // Mengecek apakah stok saat ini kurang dari atau sama dengan batas minimum
                   const isLowStock = item.quantity <= (item.minStock || 0);
                   
                   return (
@@ -186,7 +215,6 @@ export default function StockManagement() {
                           {isLowStock && (
                             <div className="group relative flex items-center">
                               <AlertCircle size={14} className="text-red-500 animate-pulse" />
-                              {/* Tooltip Batas Minimum */}
                               <span className="absolute left-6 hidden group-hover:block bg-gray-800 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap z-10 font-bold uppercase tracking-widest">
                                 Min: {item.minStock} {item.unit}
                               </span>
@@ -222,7 +250,9 @@ export default function StockManagement() {
               ) : (
                 <tr>
                   <td colSpan={5} className="p-20 text-center text-gray-400 italic">
-                    No stock data found for "{searchQuery}"
+                    {selectedCategory !== "All Categories" 
+                      ? `No stock data found for category "${selectedCategory}"`
+                      : `No stock data found for "${searchQuery}"`}
                   </td>
                 </tr>
               )}
