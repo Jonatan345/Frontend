@@ -1,0 +1,22 @@
+# Dependencies - Folder ini sangat berat, biarkan tim melakukan 'npm install' sendiri
+node_modules/
+
+# Next.js build output - File hasil compile yang tidak perlu di-track
+.next/
+out/
+build/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.development.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
