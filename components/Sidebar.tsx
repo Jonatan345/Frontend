@@ -9,7 +9,7 @@ export default function Sidebar() {
 
   // Menggunakan ikon yang sesuai dengan desain Figma
 const menuItems = [
-  { name: "Menu", href: "/", icon: <BookOpen size={20} /> },
+  { name: "Stock Management", href: "/", icon: <BookOpen size={20} /> },
   { name: "Categories", href: "/categories", icon: <Folder size={20} /> },
   { name: "Stock Reports", href: "/stock-reports", icon: <ClipboardList size={20} /> }, 
 ];
