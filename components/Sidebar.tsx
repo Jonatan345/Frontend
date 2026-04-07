@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Folder, ClipboardList } from "lucide-react";
+import { BookOpen, Folder, Tag, Package } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname(); // Mendeteksi halaman aktif
