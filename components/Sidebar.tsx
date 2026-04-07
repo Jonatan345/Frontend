@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Folder, Tag, Package } from "lucide-react";
+import { BookOpen, Folder, ClipboardList } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname(); // Mendeteksi halaman aktif
 
   // Menggunakan ikon yang sesuai dengan desain Figma
-  const menuItems = [
-    { name: "Stock Management", href: "/", icon: <BookOpen size={20} /> },
-    { name: "Categories", href: "/categories", icon: <Folder size={20} /> },
-    { name: "Promotion", href: "/promotions", icon: <Tag size={20} /> },
-    { name: "Packages", href: "/packages", icon: <Package size={20} /> },
-  ];
+const menuItems = [
+  { name: "Menu", href: "/", icon: <BookOpen size={20} /> },
+  { name: "Categories", href: "/categories", icon: <Folder size={20} /> },
+  { name: "Stock Reports", href: "/stock-reports", icon: <ClipboardList size={20} /> }, 
+];
 
   return (
     <aside className="w-64 bg-white border-r border-gray-100 flex flex-col z-20 h-screen sticky top-0">
