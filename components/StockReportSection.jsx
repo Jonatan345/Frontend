@@ -11,10 +11,10 @@ const StockReportSection = () => {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`; // Menghasilkan format YYYY-MM-DD murni sesuai WIB
+    return `${year}-${month}-${day}`;
   };
 
-  // --- Data Dummy Dinamis (Akan selalu update ke "Hari Ini") ---
+  // --- Data Dummy Dinamis ---
   const [stockLogs] = useState([
     { id: 1, date: `${getDynamicDate(0)} 14:20`, item: 'Beras Premium', qty: '10 Kg', type: 'Keluar', note: 'Masak Nasi Goreng' },
     { id: 2, date: `${getDynamicDate(0)} 10:00`, item: 'Minyak Goreng', qty: '5 Liter', type: 'Masuk', note: 'Restock Supplier' },
@@ -42,17 +42,15 @@ const StockReportSection = () => {
 
     let matchesTime = true;
     if (timeFilter !== 'Semua') {
-      const logDateString = log.date.split(' ')[0]; // Ambil YYYY-MM-DD
+      const logDateString = log.date.split(' ')[0];
       const logDateObj = new Date(logDateString);
       const todayObj = new Date();
       
-      // Hilangkan jam agar perbandingan tanggal akurat
       todayObj.setHours(0, 0, 0, 0);
       logDateObj.setHours(0, 0, 0, 0);
 
       if (timeFilter === 'Hari Ini') {
         matchesTime = logDateObj.getTime() === todayObj.getTime();
-        
       } else if (timeFilter === '7 Hari') {
         const dayOfWeek = todayObj.getDay(); 
         const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; 
@@ -60,14 +58,9 @@ const StockReportSection = () => {
         startOfWeek.setDate(todayObj.getDate() + diffToMonday);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
         matchesTime = logDateObj >= startOfWeek && logDateObj <= endOfWeek;
-
       } else if (timeFilter === '30 Hari') {
-        matchesTime = 
-          logDateObj.getMonth() === todayObj.getMonth() && 
-          logDateObj.getFullYear() === todayObj.getFullYear();
-
+        matchesTime = logDateObj.getMonth() === todayObj.getMonth() && logDateObj.getFullYear() === todayObj.getFullYear();
       } else if (timeFilter === 'Spesifik') {
         const isAfterStart = startDate ? logDateString >= startDate : true;
         const isBeforeEnd = endDate ? logDateString <= endDate : true;
@@ -78,17 +71,15 @@ const StockReportSection = () => {
     return matchesSearch && matchesType && matchesTime;
   });
 
-  // --- Logika Grafik Dinamis (7 Hari Terakhir) ---
+  // --- Logika Grafik Dinamis ---
   const graphData = (() => {
     const days = [];
     const today = new Date();
     
-    // Buat keranjang hari (H-6 sampai Hari Ini)
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
       
-      // Gunakan waktu lokal agar tidak tergeser oleh zona waktu dunia (UTC)
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
@@ -96,42 +87,37 @@ const StockReportSection = () => {
 
       days.push({
         date: dateStr,
-        label: d.toLocaleDateString('id-ID', { weekday: 'short' }), // Sen, Sel, Rab...
+        label: d.toLocaleDateString('id-ID', { weekday: 'short' }),
         total: 0
       });
     }
 
-    //Isi keranjang dengan angka dari filteredLogs
     filteredLogs.forEach(log => {
       const logDate = log.date.split(' ')[0];
       const dayIndex = days.findIndex(d => d.date === logDate);
       
       if (dayIndex !== -1) {
-        // Ambil angka saja dari string kuantitas (misal "10 Kg" -> 10)
         const numericValue = parseInt(log.qty.replace(/[^0-9]/g, '')) || 0;
         days[dayIndex].total += numericValue;
       }
     });
 
-    // 3. Cari nilai maksimal untuk menghitung persentase tinggi grafik
     const maxTotal = Math.max(...days.map(d => d.total));
-    const safeMax = maxTotal === 0 ? 1 : maxTotal; // Mencegah error dibagi 0
+    const safeMax = maxTotal === 0 ? 1 : maxTotal;
 
-    // 4. Kalkulasi tinggi CSS
     return days.map(d => ({
       ...d,
       heightPercent: (d.total / safeMax) * 100
     }));
   })();
 
-  // --- Fungsi Export CSV (Bisa dibuka di Excel) ---
+  // --- Fungsi Export CSV ---
   const handleExportCSV = () => {
     const headers = ["Tanggal & Waktu", "Nama Bahan", "Kuantitas", "Tipe", "Catatan"];
     const csvRows = [];
     csvRows.push(headers.join(',')); 
 
     filteredLogs.forEach(log => {
-      // Bungkus setiap teks dengan tanda kutip ("") agar aman dari koma nyasar
       const row = [
         `"${log.date}"`,
         `"${log.item}"`,
@@ -162,7 +148,6 @@ const StockReportSection = () => {
         
         <div className="flex flex-wrap items-center gap-3">
           
-          {/* Dropdown Waktu */}
           <div className="relative">
             <select
               value={timeFilter}
@@ -179,13 +164,12 @@ const StockReportSection = () => {
               <option value="Hari Ini">Hari Ini</option>
               <option value="7 Hari">Minggu ini</option>
               <option value="30 Hari">Bulan ini</option>
-              <option value="Spesifik">Pilih Tanggal...</option>
+              <option value="Spesifik">Tanggal Spesifik...</option>
             </select>
             <Calendar size={16} className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
             <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
           </div>
 
-          {/* Input Rentang Tanggal (Hanya muncul jika pilih "Tanggal Spesifik") */}
           {timeFilter === 'Spesifik' && (
             <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-200 h-[42px]">
               <input 
@@ -206,14 +190,13 @@ const StockReportSection = () => {
             </div>
           )}
 
-          {/* Dropdown Tipe (Masuk/Keluar) */}
           <div className="relative">
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="appearance-none flex items-center gap-2 bg-white border border-gray-200 pl-10 pr-8 py-2.5 rounded-xl font-bold text-sm text-gray-600 hover:bg-gray-50 transition-all outline-none cursor-pointer h-[42px]"
             >
-              <option value="Semua">Semua</option>
+              <option value="Semua">Semua Tipe</option>
               <option value="Masuk">Bahan Masuk</option>
               <option value="Keluar">Bahan Keluar</option>
             </select>
@@ -221,7 +204,6 @@ const StockReportSection = () => {
             <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
           </div>
 
-          {/* Tombol Export CSV */}
           <button 
             onClick={handleExportCSV}
             className="flex items-center gap-2 bg-[#107C41] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#0c6334] transition-all active:scale-95 h-[42px]"
@@ -271,32 +253,37 @@ const StockReportSection = () => {
           </span>
         </div>
         
-        <div className="flex items-end justify-between h-48 gap-2 px-4">
+        <div className="flex items-end justify-between h-48 gap-2 px-4 mt-4">
           {graphData.map((data, index) => (
-            <div key={index} className="flex flex-col items-center flex-1 gap-3">
-              <div 
-                style={{ height: `${data.heightPercent}%`, minHeight: data.total === 0 ? '4px' : '0' }} 
-                className={`w-full max-w-[40px] rounded-t-xl transition-all cursor-pointer relative group ${
-                  data.total > 0 
-                    ? 'bg-gradient-to-t from-[#F58A27] to-[#ffb36d] hover:brightness-110' 
-                    : 'bg-gray-100' 
-                }`}
-              >
-                {/* Tooltip Hover */}
-                {data.total > 0 && (
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded hidden group-hover:block whitespace-nowrap z-10">
-                    {data.total} Units
-                  </div>
-                )}
+            <div key={index} className="flex flex-col items-center flex-1 gap-2 h-full">
+              
+              {/* Ruang agar tiang bisa tumbuh dari bawah ke atas */}
+              <div className="w-full flex-1 flex items-end justify-center">
+                <div 
+                  style={{ height: `${data.heightPercent}%` }} 
+                  className={`w-full max-w-[40px] rounded-t-xl transition-all cursor-pointer relative group ${
+                    data.total > 0 
+                      ? 'bg-gradient-to-t from-[#F58A27] to-[#ffb36d] hover:brightness-110' 
+                      : 'bg-gray-100 min-h-[4px]' 
+                  }`}
+                >
+                  {/* Tooltip Hover */}
+                  {data.total > 0 && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded hidden group-hover:block whitespace-nowrap z-10">
+                      {data.total} Units
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">{data.label}</span>
+
+              <span className="text-[10px] font-bold text-gray-400 uppercase pb-2">{data.label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* --- Tabel Log Penggunaan Bahan --- */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden mt-8">
         <div className="p-8 border-b border-gray-50 flex justify-between items-center">
           <h3 className="text-xl font-black text-gray-800 tracking-tighter">Material Usage Log</h3>
           

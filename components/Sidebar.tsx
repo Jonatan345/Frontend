@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-// Saya tambahkan ClipboardList dan hapus Tag/Package yang tidak terpakai
-import { BookOpen, Folder, ClipboardList } from "lucide-react";
+// Saya tambahkan LayoutDashboard untuk icon menu baru
+import { BookOpen, Folder, ClipboardList, LayoutDashboard } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname(); // Mendeteksi halaman aktif
 
-  // Daftar menu sesuai kebutuhan Bima Resto
+  // Daftar menu Bima Resto - Dashboard Stok diletakkan paling atas
   const menuItems = [
+    { name: "Dashboard Stok", href: "/inventory-dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Stock Management", href: "/", icon: <BookOpen size={20} /> },
     { name: "Categories", href: "/categories", icon: <Folder size={20} /> },
     { name: "Stock Reports", href: "/stock-reports", icon: <ClipboardList size={20} /> }, 
@@ -33,6 +34,7 @@ export default function Sidebar() {
       {/* --- Bagian Navigasi Menu --- */}
       <nav className="flex-1 space-y-2 px-4">
         {menuItems.map((item) => {
+          // Logika untuk mendeteksi apakah menu sedang aktif/dibuka
           const isActive = item.href === "/" 
             ? pathname === "/" 
             : pathname.startsWith(item.href);
@@ -43,8 +45,8 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all font-bold ${
                 isActive 
-                  ? "bg-[#FFF4EA] text-[#F58A27] shadow-sm" // Aktif
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800" // Tidak Aktif
+                  ? "bg-[#FFF4EA] text-[#F58A27] shadow-sm" // Style saat Aktif
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800" // Style saat Tidak Aktif
               }`}
             >
               <div className={`${isActive ? "text-[#F58A27]" : "text-gray-400"}`}>
