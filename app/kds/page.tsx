@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 
+// --- SESUAIKAN DENGAN JONATHAN ---
 const API_URL = "http://localhost:8080/api/kds/orders";
 
 const OrderTimer = ({ createdAt, status }: { createdAt: any, status: string }) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
+    // Jonathan tidak mengirim createdAt, jadi kita jaga agar tidak NaN
     if (!createdAt || status === 'ready' || status === 'completed') return;
 
     const startTime = new Date(createdAt).getTime();
@@ -51,11 +53,13 @@ export default function KitchenDisplay() {
   }, []);
 
   const handleUpdateStatus = async (id: string | number, currentStatus: string) => {
+    // Logika urutan status sesuai Jonathan
     const nextStatus = currentStatus === 'pending' ? 'cooking' : 'ready';
     
     try {
+      // Endpoint Jonathan: /api/kds/orders/:id/status
       const response = await fetch(`${API_URL}/${id}/status`, {
-        method: 'PUT',
+        method: 'PUT', // Menggunakan PUT sesuai script Jonathan
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus })
       });
@@ -73,7 +77,7 @@ export default function KitchenDisplay() {
       <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center text-center">
         <div>
           <div className="w-12 h-12 border-4 border-[#F58A27] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Menyambung ke Backend...</p>
+          <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Menyambung ke Backend Jonathan...</p>
         </div>
       </div>
     );
