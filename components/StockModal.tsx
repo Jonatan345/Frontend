@@ -6,12 +6,14 @@ export default function StockModal({
   isOpen, 
   onClose, 
   onAdd, 
-  editData 
+  editData,
+  categories
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   onAdd: (item: any) => void; 
   editData?: any;
+  categories: string[];
 }) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState<number>(0);
@@ -24,11 +26,16 @@ export default function StockModal({
       setName(editData.name);
       setQuantity(editData.quantity);
       setUnit(editData.unit || "Kg");
-      setCategory(editData.category || "Dry Ingredients");
+      setCategory(editData.category || categories[0] || "Dry Ingredients");
+      setMinStock(editData.minStock ?? 5);
     } else {
-      setName(""); setQuantity(0); setUnit("Kg"); setCategory("Dry Ingredients");
+      setName("");
+      setQuantity(0);
+      setUnit("Kg");
+      setCategory(categories[0] || "Dry Ingredients");
+      setMinStock(5);
     }
-  }, [editData, isOpen]);
+  }, [editData, isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -74,13 +81,21 @@ export default function StockModal({
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full appearance-none border border-gray-200 p-3 rounded-xl text-sm bg-white outline-none focus:ring-2 focus:ring-bima-orange/20 cursor-pointer"
               >
-                <option value="Dry Ingredients">Dry Ingredients</option>
-                <option value="Fresh Ingredients (Vegetable)">Fresh Ingredients (Vegetable)</option>
-                <option value="Fresh Ingredients (Fruits)">Fresh Ingredients (Fruits)</option>
-                <option value="Fresh Ingredients (Poultry)">Fresh Ingredients (Poultry)</option>
-                <option value="Fresh Ingredients (Meat)">Fresh Ingredients (Meat)</option>
-                <option value="Fresh Ingredients (Seafood)">Fresh Ingredients (Seafood)</option>
-                <option value="Bottle">Bottle</option>
+                {categories.length > 0 ? (
+                  categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Dry Ingredients">Dry Ingredients</option>
+                    <option value="Fresh Ingredients (Vegetable)">Fresh Ingredients (Vegetable)</option>
+                    <option value="Fresh Ingredients (Fruits)">Fresh Ingredients (Fruits)</option>
+                    <option value="Fresh Ingredients (Poultry)">Fresh Ingredients (Poultry)</option>
+                    <option value="Fresh Ingredients (Meat)">Fresh Ingredients (Meat)</option>
+                    <option value="Fresh Ingredients (Seafood)">Fresh Ingredients (Seafood)</option>
+                    <option value="Bottle">Bottle</option>
+                  </>
+                )}
               </select>
               <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
             </div>
