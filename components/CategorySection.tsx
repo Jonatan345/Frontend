@@ -96,33 +96,9 @@ export default function CategorySection() {
         throw new Error(data.message || 'Gagal menyimpan kategori.');
       }
 
-      if (modalMode === 'create') {
-        setCategories((prev) => [
-          ...prev,
-          {
-            id: data.id,
-            name: data.name,
-            icon: categoryIcon(data.name),
-            types: categoryTypes(data.name),
-            totalItems: 0,
-          },
-        ]);
-      } else {
-        setCategories((prev) =>
-          prev.map((cat) =>
-            cat.id === data.id
-              ? {
-                  ...cat,
-                  name: data.name,
-                  icon: categoryIcon(data.name),
-                  types: categoryTypes(data.name),
-                }
-              : cat
-          )
-        );
-      }
-
+      // after successful save, reload from server to keep UI consistent
       closeModal();
+      await loadCategories();
     } catch (error: any) {
       console.error('Category save error:', error);
       setFormError(error.message || 'Terjadi kesalahan saat menyimpan kategori.');
@@ -144,59 +120,60 @@ export default function CategorySection() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Gagal menghapus kategori.');
-      setCategories((prev) => prev.filter((cat) => cat.id !== category.id));
+      // reload categories from server to ensure consistency
+      await loadCategories();
     } catch (error: any) {
       console.error('Category delete error:', error);
       setFormError(error.message || 'Terjadi kesalahan saat menghapus kategori.');
     }
   };
+  // extract loadCategories so other handlers can refresh UI from server
+  const loadCategories = async () => {
+    if (!token) return;
+
+    try {
+      const [categoryRes, menuRes] = await Promise.all([
+        fetch(`${API_BASE}/api/kategori`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        fetch(`${API_BASE}/api/menu`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+      ]);
+
+      if (!categoryRes.ok) throw new Error('Gagal memuat kategori dari database.');
+      if (!menuRes.ok) throw new Error('Gagal memuat menu dari database.');
+
+      const categoryList = await categoryRes.json();
+      const menuList = await menuRes.json();
+
+      const counts = menuList.reduce((acc: Record<string, number>, item: any) => {
+        const name = item?.category?.name || 'Unknown';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {});
+
+      setCategories(
+        categoryList.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          icon: categoryIcon(cat.name),
+          types: categoryTypes(cat.name),
+          totalItems: counts[cat.name] || 0,
+        }))
+      );
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   useEffect(() => {
-    const loadCategories = async () => {
-      if (!token) return;
-
-      try {
-        const [categoryRes, menuRes] = await Promise.all([
-          fetch(`${API_BASE}/api/kategori`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-          fetch(`${API_BASE}/api/menu`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-        ]);
-
-        if (!categoryRes.ok) throw new Error("Gagal memuat kategori dari database.");
-        if (!menuRes.ok) throw new Error("Gagal memuat menu dari database.");
-
-        const categoryList = await categoryRes.json();
-        const menuList = await menuRes.json();
-
-        const counts = menuList.reduce((acc: Record<string, number>, item: any) => {
-          const name = item?.category?.name || "Unknown";
-          acc[name] = (acc[name] || 0) + 1;
-          return acc;
-        }, {});
-
-        setCategories(
-          categoryList.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            icon: categoryIcon(cat.name),
-            types: categoryTypes(cat.name),
-            totalItems: counts[cat.name] || 0,
-          }))
-        );
-      } catch (error) {
-        console.error("Error loading categories:", error);
-      }
-    };
-
     loadCategories();
   }, [token]);
 
