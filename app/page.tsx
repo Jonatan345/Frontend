@@ -1,26 +1,95 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, ChevronDown, Package2, Edit3, Trash2, AlertCircle, BellRing } from "lucide-react";
 import StockModal from "@/components/StockModal";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
-export default function StockManagement() {
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+function StockManagementContent() {
+  const { token, user } = useAuth();
   // --- States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories"); // State baru untuk filter kategori
   const [editingStock, setEditingStock] = useState<any>(null);
+  const [stockData, setStockData] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Data Awal dengan Kategori
-  const [stockData, setStockData] = useState([
-    { name: "Daging Sapi Sirloin", quantity: 15, unit: "Kg", category: "Fresh Ingredients (Meat)", minStock: 10 },
-    { name: "Daging Ayam Fillet", quantity: 8, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 10 },
-    { name: "Telur Ayam", quantity: 50, unit: "Kg", category: "Fresh Ingredients (Poultry)", minStock: 20 },
-    { name: "Minyak Goreng", quantity: 5, unit: "Liter", category: "Bottle", minStock: 10 },
-    { name: "Beras Pandan Wangi", quantity: 100, unit: "Kg", category: "Dry Ingredients", minStock: 20 },
-  ]);
+  useEffect(() => {
+    const getUnit = (category: string) => {
+      if (/bottle|minuman/i.test(category)) return "Liter";
+      return "Kg";
+    };
+
+    const getMinStock = (category: string) => {
+      if (/dry/i.test(category)) return 20;
+      if (/bottle|minuman/i.test(category)) return 10;
+      if (/pastry|dessert/i.test(category)) return 8;
+      if (/fruit|vegetables/i.test(category)) return 15;
+      return 10;
+    };
+
+    const mapMenuItem = (item: any) => {
+      const categoryName = item?.category?.name || "Unknown";
+      return {
+        id: item.id,
+        name: item.name,
+        quantity: item.stock,
+        unit: getUnit(categoryName),
+        category: categoryName,
+        minStock: getMinStock(categoryName),
+        price: item.price,
+        estimatedTime: item.estimatedTime,
+        status: item.status,
+      };
+    };
+
+    const loadData = async () => {
+      if (!token) return;
+
+      setLoading(true);
+      try {
+        const [categoryResp, menuResp] = await Promise.all([
+          fetch(`${API_BASE}/api/kategori`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }),
+          fetch(`${API_BASE}/api/menu`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }),
+        ]);
+
+        if (!categoryResp.ok) throw new Error("Gagal memuat kategori dari database.");
+        if (!menuResp.ok) throw new Error("Gagal memuat menu item dari database.");
+
+        const categoryList = await categoryResp.json();
+        const menuList = await menuResp.json();
+
+        setCategories(categoryList.map((cat: any) => ({ id: cat.id, name: cat.name })));
+        setStockData(menuList.map((item: any) => mapMenuItem(item)));
+      } catch (err: any) {
+        console.error(err);
+        setError(err?.message || "Terjadi kesalahan saat memuat data dari database.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [token]);
 
   // --- Functions ---
   const handleOpenAdd = () => {
@@ -33,13 +102,50 @@ export default function StockManagement() {
     setIsModalOpen(true);
   };
 
-  const handleAddOrUpdate = (item: any) => {
-    if (editingStock) {
-      setStockData((prev) => prev.map((s) => s.name === editingStock.name ? item : s));
-    } else {
-      setStockData((prev) => [item, ...prev]);
+  const handleAddOrUpdate = async (item: any) => {
+    if (!token) return closeModal();
+
+    try {
+      if (editingStock && editingStock.id) {
+        // update existing
+        const res = await fetch(`${API_BASE}/api/inventory/${editingStock.id}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: item.name,
+            stock: item.quantity,
+            price: item.price ?? undefined,
+            estimatedTime: item.estimatedTime ?? undefined,
+            status: item.status ?? undefined,
+            // map category name to id
+            categoryId: categories.find(c => c.name === item.category)?.id,
+          }),
+        });
+        if (!res.ok) throw new Error('Gagal memperbarui item di server');
+      } else {
+        // create new
+        const res = await fetch(`${API_BASE}/api/inventory`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: item.name,
+            stock: item.quantity,
+            price: item.price ?? undefined,
+            estimatedTime: item.estimatedTime ?? undefined,
+            status: item.status ?? 'active',
+            categoryId: categories.find(c => c.name === item.category)?.id,
+          }),
+        });
+        if (!res.ok) throw new Error('Gagal menambah item ke server');
+      }
+
+      await loadData();
+    } catch (e: any) {
+      console.error('Inventory save error:', e);
+      setError(e?.message || 'Terjadi kesalahan saat menyimpan ke server.');
+    } finally {
+      closeModal();
     }
-    closeModal();
   };
 
   const closeModal = () => {
@@ -47,16 +153,29 @@ export default function StockManagement() {
     setEditingStock(null);
   };
 
-  const triggerDelete = (name: string) => {
+  const triggerDelete = (id: number, name: string) => {
     setItemToDelete(name);
+    setDeleteItemId(id);
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (itemToDelete) {
-      setStockData((prev) => prev.filter((item) => item.name !== itemToDelete));
+  const handleConfirmDelete = async () => {
+    if (!deleteItemId || !token) return setIsDeleteModalOpen(false);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/inventory/${deleteItemId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Gagal menghapus item di server');
+      await loadData();
+    } catch (e: any) {
+      console.error('Delete inventory error:', e);
+      setError(e?.message || 'Terjadi kesalahan saat menghapus.');
+    } finally {
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
+      setDeleteItemId(null);
     }
   };
 
@@ -154,13 +273,9 @@ export default function StockManagement() {
               className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-gray-600 outline-none font-medium text-sm cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option value="All Categories">All Categories</option>
-              <option value="Dry Ingredients">Dry Ingredients</option>
-              <option value="Fresh Ingredients (Vegetable)">Fresh Ingredients (Vegetable)</option>
-              <option value="Fresh Ingredients (Fruits)">Fresh Ingredients (Fruits)</option>
-              <option value="Fresh Ingredients (Poultry)">Fresh Ingredients (Poultry)</option>
-              <option value="Fresh Ingredients (Meat)">Fresh Ingredients (Meat)</option>
-              <option value="Fresh Ingredients (Seafood)">Fresh Ingredients (Seafood)</option>
-              <option value="Bottle">Bottle</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>{category.name}</option>
+              ))}
             </select>
             <ChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={16} />
           </div>
@@ -198,12 +313,18 @@ export default function StockManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredStock.length > 0 ? (
-                filteredStock.map((item, index) => {
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="p-20 text-center text-gray-400 italic">
+                    Loading data from database...
+                  </td>
+                </tr>
+              ) : filteredStock.length > 0 ? (
+                filteredStock.map((item) => {
                   const isLowStock = item.quantity <= (item.minStock || 0);
                   
                   return (
-                    <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="p-5">
                         <span className="font-bold text-gray-700">{item.name}</span>
                       </td>
@@ -237,7 +358,7 @@ export default function StockManagement() {
                             <Edit3 size={18} />
                           </button>
                           <button 
-                            onClick={() => triggerDelete(item.name)}
+                            onClick={() => triggerDelete(item.id, item.name)}
                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                           >
                             <Trash2 size={18} />
@@ -267,13 +388,26 @@ export default function StockManagement() {
         onClose={closeModal} 
         onAdd={handleAddOrUpdate}
         editData={editingStock}
+        categories={categories.map(c => c.name)}
       />
 
-      <DeleteConfirmModal 
-        isOpen={isDeleteModalOpen} 
-        onClose={() => setIsDeleteModalOpen(false)} 
-        onConfirm={handleConfirmDelete} 
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
+}
+
+export default function StockManagement() {
+  return (
+    <ProtectedRoute>
+      <StockManagementContent />
+    </ProtectedRoute>
+  );
+}
+
+function loadData() {
+  throw new Error("Function not implemented.");
 }
