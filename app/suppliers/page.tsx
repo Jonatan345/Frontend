@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Truck, Phone, Mail, MapPin, User, X, Pencil, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { Plus, Search, Truck, Phone, Mail, MapPin, User, X, Pencil, ChevronLeft, Trash2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Supplier {
@@ -497,7 +499,8 @@ function SupplierDetail({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(MOCK_SUPPLIERS);
+  const { token } = useAuth();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [transactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -524,25 +527,88 @@ export default function SuppliersPage() {
   });
 
   const handleSaveSupplier = (data: Partial<Supplier>) => {
-    if (modalSupplier === "new") {
-      setSuppliers((prev) => [
-        ...prev,
-        {
-          ...data,
-          id: Date.now(),
-          created_at: new Date().toISOString().split("T")[0],
-          total_transactions: 0,
-          total_value: 0,
-        } as Supplier,
-      ]);
-    } else if (modalSupplier) {
-      setSuppliers((prev) =>
-        prev.map((s) => (s.id === modalSupplier.id ? { ...s, ...data } : s))
-      );
-      if (selectedSupplier?.id === modalSupplier.id) {
-        setSelectedSupplier((s) => (s ? { ...s, ...data } as Supplier : null));
+    // persist to server then reload
+    (async () => {
+      try {
+        if (!token) throw new Error('Not authenticated');
+        if (modalSupplier === 'new') {
+          const res = await fetch(`${API_BASE}/api/supplier`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: data.name,
+              companyName: data.contact_person ?? data.name,
+              category: data.category,
+              phone: data.phone,
+              email: data.email,
+              address: data.address,
+              city: '',
+              status: data.status ?? 'Aktif',
+            }),
+          });
+          if (!res.ok) throw new Error('Gagal menambah supplier');
+        } else if (modalSupplier && typeof modalSupplier !== 'string') {
+          const id = modalSupplier.id;
+          const res = await fetch(`${API_BASE}/api/supplier/${id}`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: data.name,
+              companyName: data.contact_person ?? data.name,
+              category: data.category,
+              phone: data.phone,
+              email: data.email,
+              address: data.address,
+              city: '',
+              status: data.status ?? 'Aktif',
+            }),
+          });
+          if (!res.ok) throw new Error('Gagal memperbarui supplier');
+        }
+        await loadSuppliers();
+      } catch (e: any) {
+        console.error('Save supplier error:', e);
       }
+    })();
+  };
+
+  // load suppliers from server
+  const loadSuppliers = async () => {
+    try {
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/supplier`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Gagal memuat supplier');
+      const data = await res.json();
+      // map server fields to frontend Supplier type
+      setSuppliers(data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        contact_person: s.companyName || '',
+        phone: s.phone || '',
+        email: s.email || '',
+        address: s.address || '',
+        category: s.category || 'Lainnya',
+        status: s.status === 'Aktif' || s.status === 'active' ? 'active' : 'inactive',
+        created_at: s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '',
+        total_transactions: s._count?.transactions || 0,
+        total_value: 0,
+      })));
+    } catch (e) {
+      console.error('Load suppliers error:', e);
     }
+  };
+
+  useEffect(() => { loadSuppliers(); }, [token]);
+
+  const handleDeleteSupplier = async (id: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/supplier/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Gagal menghapus supplier');
+      await loadSuppliers();
+    } catch (e) { console.error(e); }
   };
 
   const totalActive = suppliers.filter((s) => s.status === "active").length;
@@ -656,8 +722,8 @@ export default function SuppliersPage() {
                       }`}
                     >
                       {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 mb-4">
                           <div className="w-10 h-10 rounded-2xl bg-[#FFF4EA] flex items-center justify-center">
                             <Truck size={18} className="text-[#F58A27]" />
                           </div>
@@ -668,15 +734,34 @@ export default function SuppliersPage() {
                             <p className="text-gray-400 text-xs mt-0.5">{supplier.contact_person}</p>
                           </div>
                         </div>
-                        <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                            supplier.status === "active"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-500"
-                          }`}
-                        >
-                          {supplier.status === "active" ? "Aktif" : "Nonaktif"}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                              supplier.status === "active"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {supplier.status === "active" ? "Aktif" : "Tidak Aktif"}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setModalSupplier(supplier); }}
+                              className="p-2 rounded-lg text-sm text-[#F58A27] hover:bg-[#FFF4EA]"
+                              aria-label={`Edit ${supplier.name}`}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteSupplier(supplier.id); }}
+                              className="p-2 rounded-lg text-sm text-red-500 hover:bg-red-50"
+                              aria-label={`Hapus ${supplier.name}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Category */}
